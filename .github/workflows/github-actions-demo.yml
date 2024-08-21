@@ -1,0 +1,33 @@
+name: Check Application Status
+
+# Dispara a cada 20 minutos
+on:
+  schedule:
+    - cron: "*/2 * * * *"
+
+jobs:
+  check-status:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check if application is up
+        run: |
+          response=$(curl -o /dev/null -s -w "%{http_code}" http://telemacticsfront-qa.eastus.cloudapp.azure.com)
+          if [ $response -ne 200 ]; then
+            echo "Application is down!"
+            exit 1
+          else
+            echo "Application is up!"
+          fi
+      - name: Send email if application is down
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.your-email-server.com
+          server_port: 587
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Application is down"
+          to: melissa.moll@br.bosch.com
+          from: github-actions@example.com
+          body: "The application is down. Please check the status."
